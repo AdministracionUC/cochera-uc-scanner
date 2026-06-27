@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Cochera UC - Sede Cusco</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; text-align: center; background-color: #F4F4F4; padding: 15px; min-height: 100vh; }
+    .contenedor { max-width: 460px; margin: 0 auto; background-color: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+    .cabecera { background-color: #007A3D; color: white; padding: 22px 20px; border-bottom: 5px solid #1A1A1A; }
+    .cabecera h2 { margin: 0; font-size: 1.3em; letter-spacing: 0.5px; }
+    .cabecera p { margin: 5px 0 0 0; font-size: 0.88em; opacity: 0.88; }
+    .cuerpo { padding: 20px; }
+    #reader { width: 100%; border-radius: 8px; overflow: hidden; border: 2px solid #ddd; }
+    #resultado { margin-top: 16px; padding: 14px 18px; font-weight: bold; font-size: 1em; border-radius: 8px; background: #F4F4F4; color: #444; min-height: 50px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+    .exito    { color: #155724; background: #D4EDDA !important; border: 1px solid #C3E6CB; }
+    .error    { color: #721C24; background: #F8D7DA !important; border: 1px solid #F5C6CB; }
+    .cargando { color: #004085; background: #CCE5FF !important; border: 1px solid #B8DAFF; }
+    .aviso    { color: #856404; background: #FFF3CD !important; border: 1px solid #FFEEBA; }
+    .pie { background-color: #1A1A1A; color: #aaa; font-size: 11px; padding: 12px; margin-top: 16px; }
+    .pie strong { color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <div class="cabecera">
+      <h2>🎫 Control de Cochera UC</h2>
+      <p>Universidad Continental — Sede Cusco</p>
+    </div>
+    <div class="cuerpo">
+      <div id="reader"></div>
+      <div id="resultado">Iniciando escáner...</div>
+    </div>
+    <div class="pie">
+      <strong>Administración de Seguridad</strong><br>
+      Universidad Continental Cusco
+    </div>
+  </div>
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxQdbyQGrbkmtOKeQf-auTr3Ga_EtBmbm3Iq1k7w4VxH-hKq-Ari8WmyoI8z71PyuiP4g/exec";
+
+    let isScanning = false;
+
+    function mostrarResultado(mensaje, clase) {
+      const div = document.getElementById('resultado');
+      div.innerHTML = mensaje;
+      div.className = clase;
+    }
+
+    function onScanSuccess(decodedText) {
+      if (isScanning) return;
+      isScanning = true;
+      mostrarResultado("⏳ Verificando credencial...", "cargando");
+      fetch(API_URL + "?dni=" + encodeURIComponent(decodedText))
+        .then(res => res.json())
+        .then(data => {
+          const msg = data.mensaje || "Sin respuesta del servidor.";
+          let clase = "exito";
+          if (msg.includes("❌") || msg.includes("Denegado")) clase = "error";
+          if (msg.includes("⚠️") || msg.includes("Bloqueado")) clase = "aviso";
+          mostrarResultado(msg, clase);
+          setTimeout(() => { isScanning = false; mostrarResultado("📷 Esperando credencial QR...", ""); }, 3500);
+        })
+        .catch(() => {
+          mostrarResultado("❌ Error de conexión. Verifica el internet.", "error");
+          setTimeout(() => { isScanning = false; }, 3000);
+        });
+    }
+
+    const config = {
+      fps: 10,
+      qrbox: { width: 260, height: 260 },
+      videoConstraints: { facingMode: { ideal: "environment" } }
+    };
+
+    const scanner = new Html5QrcodeScanner("reader", config, false);
+    scanner.render(onScanSuccess, () => {});
+    mostrarResultado("📷 Esperando credencial QR...", "");
+  </script>
+</body>
+</html>
