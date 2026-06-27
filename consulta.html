@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consulta de Registros - Cochera UC Cusco</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #F4F4F4; padding: 15px; }
+
+    .cabecera {
+      background: #007A3D;
+      color: white;
+      padding: 20px 25px;
+      border-bottom: 5px solid #1A1A1A;
+      border-radius: 12px 12px 0 0;
+      text-align: center;
+    }
+    .cabecera h1 { font-size: 1.3em; margin-bottom: 4px; }
+    .cabecera p  { font-size: 0.85em; opacity: 0.88; }
+
+    .contenedor { max-width: 1100px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+
+    .controles {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: #f9f9f9;
+      border-bottom: 1px solid #ddd;
+      flex-wrap: wrap;
+    }
+    .controles label { font-weight: bold; font-size: 14px; color: #333; }
+    .controles input[type="date"] {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .btn {
+      padding: 8px 20px;
+      background: #007A3D;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn:hover { background: #005f2f; }
+    .btn-hoy { background: #1A1A1A; }
+    .btn-hoy:hover { background: #333; }
+
+    .tarjetas {
+      display: flex;
+      gap: 12px;
+      padding: 16px 20px;
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      flex-wrap: wrap;
+    }
+    .tarjeta {
+      flex: 1;
+      min-width: 140px;
+      padding: 14px 18px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .tarjeta .numero { font-size: 2em; font-weight: bold; }
+    .tarjeta .etiqueta { font-size: 12px; margin-top: 4px; opacity: 0.8; }
+    .verde  { background: #D4EDDA; color: #155724; }
+    .azul   { background: #CCE5FF; color: #004085; }
+    .gris   { background: #e9ecef; color: #495057; }
+
+    .estado-carga {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+      font-size: 15px;
+    }
+
+    .tabla-wrap { overflow-x: auto; padding: 0 20px 20px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    th {
+      background: #1A1A1A;
+      color: white;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    td { padding: 9px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    tr:hover td { background: #f5f5f5; }
+    tr:last-child td { border-bottom: none; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .adentro { background: #D4EDDA; color: #155724; }
+    .afuera  { background: #e9ecef; color: #495057; }
+
+    .sin-datos { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+
+    .auto-refresh { font-size: 11px; color: #999; margin-left: auto; }
+
+    .pie {
+      background: #1A1A1A;
+      color: #aaa;
+      text-align: center;
+      padding: 12px;
+      font-size: 11px;
+    }
+    .pie strong { color: white; }
+  </style>
+</head>
+<body>
+<div class="contenedor">
+
+  <div class="cabecera">
+    <h1>📋 Registro de Ingresos — Cochera UC</h1>
+    <p>Universidad Continental — Sede Cusco</p>
+  </div>
+
+  <div class="controles">
+    <label for="fecha">Consultar fecha:</label>
+    <input type="date" id="fecha">
+    <button class="btn" onclick="cargarDatos()">🔍 Consultar</button>
+    <button class="btn btn-hoy" onclick="irHoy()">📅 Hoy</button>
+    <span class="auto-refresh" id="refresh-info">Se actualiza automáticamente cada 30 seg</span>
+  </div>
+
+  <div class="tarjetas">
+    <div class="tarjeta verde">
+      <div class="numero" id="cnt-adentro">—</div>
+      <div class="etiqueta">🟢 Actualmente adentro</div>
+    </div>
+    <div class="tarjeta azul">
+      <div class="numero" id="cnt-total">—</div>
+      <div class="etiqueta">📊 Total del día</div>
+    </div>
+    <div class="tarjeta gris">
+      <div class="numero" id="cnt-afuera">—</div>
+      <div class="etiqueta">⬜ Ya salieron</div>
+    </div>
+  </div>
+
+  <div class="tabla-wrap">
+    <div class="estado-carga" id="estado">Selecciona una fecha y presiona Consultar.</div>
+    <table id="tabla" style="display:none;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Estado</th>
+          <th>Nombres</th>
+          <th>DNI</th>
+          <th>Celular</th>
+          <th>Placa</th>
+          <th>Color</th>
+          <th>Ingreso 1</th>
+          <th>Salida 1</th>
+          <th>Ingreso 2</th>
+          <th>Salida 2</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="sin-datos" id="sin-datos" style="display:none;">
+      📭 No hay registros para esta fecha.
+    </div>
+  </div>
+
+  <div class="pie">
+    <strong>Administración de Seguridad — Universidad Continental Cusco</strong>
+  </div>
+
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbxQdbyQGrbkmtOKeQf-auTr3Ga_EtBmbm3Iq1k7w4VxH-hKq-Ari8WmyoI8z71PyuiP4g/exec";
+
+  let intervalo = null;
+
+  // Poner fecha de hoy por defecto al cargar
+  window.onload = function() {
+    irHoy();
+  };
+
+  function irHoy() {
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm   = String(hoy.getMonth() + 1).padStart(2, "0");
+    const dd   = String(hoy.getDate()).padStart(2, "0");
+    document.getElementById("fecha").value = yyyy + "-" + mm + "-" + dd;
+    cargarDatos();
+  }
+
+  function fechaParaAPI(valorInput) {
+    // Convierte "2026-06-27" → "27-06-2026"
+    const partes = valorInput.split("-");
+    return partes[2] + "-" + partes[1] + "-" + partes[0];
+  }
+
+  function cargarDatos() {
+    const valorFecha = document.getElementById("fecha").value;
+    if (!valorFecha) {
+      alert("Selecciona una fecha primero.");
+      return;
+    }
+
+    const fechaAPI = fechaParaAPI(valorFecha);
+
+    document.getElementById("estado").style.display = "block";
+    document.getElementById("estado").textContent = "⏳ Cargando registros...";
+    document.getElementById("tabla").style.display = "none";
+    document.getElementById("sin-datos").style.display = "none";
+
+    fetch(API_URL + "?accion=consulta&fecha=" + encodeURIComponent(fechaAPI))
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) throw new Error("Error en la API");
+        renderTabla(data);
+
+        // Reiniciar auto-refresh solo si es hoy
+        if (intervalo) clearInterval(intervalo);
+        const hoyAPI = fechaParaAPI(new Date().toISOString().slice(0, 10));
+        if (fechaAPI === hoyAPI) {
+          intervalo = setInterval(cargarDatos, 30000);
+          document.getElementById("refresh-info").textContent = "↻ Actualizando cada 30 seg (hoy)";
+        } else {
+          document.getElementById("refresh-info").textContent = "Consulta histórica — sin auto-actualización";
+        }
+      })
+      .catch(() => {
+        document.getElementById("estado").textContent = "❌ Error de conexión. Verifica el internet.";
+      });
+  }
+
+  function renderTabla(data) {
+    document.getElementById("cnt-adentro").textContent = data.adentro;
+    document.getElementById("cnt-total").textContent   = data.total;
+    document.getElementById("cnt-afuera").textContent  = data.total - data.adentro;
+
+    if (data.registros.length === 0) {
+      document.getElementById("estado").style.display    = "none";
+      document.getElementById("tabla").style.display     = "none";
+      document.getElementById("sin-datos").style.display = "block";
+      return;
+    }
+
+    const tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+
+    data.registros.forEach((r, idx) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td><span class="badge ${r.adentro ? 'adentro' : 'afuera'}">${r.adentro ? '🟢 Adentro' : '⬜ Afuera'}</span></td>
+        <td><strong>${r.nombres}</strong></td>
+        <td>${r.dni}</td>
+        <td>${r.celular || "—"}</td>
+        <td>${r.placa || "—"}</td>
+        <td>${r.color || "—"}</td>
+        <td>${r.ing1 || "—"}</td>
+        <td>${r.sal1 || "—"}</td>
+        <td>${r.ing2 || "—"}</td>
+        <td>${r.sal2 || "—"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("estado").style.display    = "none";
+    document.getElementById("sin-datos").style.display = "none";
+    document.getElementById("tabla").style.display     = "table";
+  }
+</script>
+</body>
+</html>
