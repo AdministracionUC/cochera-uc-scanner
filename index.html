@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Estacionamiento UC - Sede Cusco</title>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <title>Control de Cochera UC - Sede Cusco</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; text-align: center; background-color: #F4F4F4; padding: 15px; min-height: 100vh; }
@@ -13,71 +12,117 @@
     .cabecera h2 { margin: 0; font-size: 1.3em; letter-spacing: 0.5px; }
     .cabecera p { margin: 5px 0 0 0; font-size: 0.88em; opacity: 0.88; }
     .cuerpo { padding: 20px; }
-    #reader { width: 100%; border-radius: 8px; overflow: hidden; border: 2px solid #ddd; }
-    #resultado { margin-top: 16px; padding: 14px 18px; font-weight: bold; font-size: 1em; border-radius: 8px; background: #F4F4F4; color: #444; min-height: 50px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+    #video-container { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #000; }
+    #video { width: 100%; display: block; }
+    #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 220px; border: 3px solid #007A3D; border-radius: 12px; box-shadow: 0 0 0 2000px rgba(0,0,0,0.45); pointer-events: none; }
+    #overlay::before, #overlay::after { content: ''; position: absolute; width: 30px; height: 30px; border-color: white; border-style: solid; }
+    #overlay::before { top: -3px; left: -3px; border-width: 4px 0 0 4px; border-radius: 8px 0 0 0; }
+    #overlay::after  { bottom: -3px; right: -3px; border-width: 0 4px 4px 0; border-radius: 0 0 8px 0; }
+    #resultado { margin-top: 16px; padding: 14px 18px; font-weight: bold; font-size: 1em; border-radius: 8px; background: #F4F4F4; color: #444; min-height: 50px; display: flex; align-items: center; justify-content: center; }
     .exito    { color: #155724; background: #D4EDDA !important; border: 1px solid #C3E6CB; }
     .error    { color: #721C24; background: #F8D7DA !important; border: 1px solid #F5C6CB; }
     .cargando { color: #004085; background: #CCE5FF !important; border: 1px solid #B8DAFF; }
     .aviso    { color: #856404; background: #FFF3CD !important; border: 1px solid #FFEEBA; }
-    .pie { background-color: #1A1A1A; color: #aaa; font-size: 11px; padding: 12px; margin-top: 16px; }
+    .pie { background-color: #1A1A1A; color: #aaa; font-size: 11px; padding: 12px; margin-top: 0; }
     .pie strong { color: #fff; }
+    canvas { display: none; }
   </style>
 </head>
 <body>
-  <div class="contenedor">
-    <div class="cabecera">
-      <h2>🎫 Control de Estacionamiento UC</h2>
-      <p>Universidad Continental — Sede Cusco</p>
-    </div>
-    <div class="cuerpo">
-      <div id="reader"></div>
-      <div id="resultado">Iniciando escáner...</div>
-    </div>
-    <div class="pie">
-      <strong>Administración de Seguridad</strong><br>
-      Universidad Continental Cusco
-    </div>
+<div class="contenedor">
+  <div class="cabecera">
+    <h2>🎫 Control de Cochera UC</h2>
+    <p>Universidad Continental — Sede Cusco</p>
   </div>
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxQdbyQGrbkmtOKeQf-auTr3Ga_EtBmbm3Iq1k7w4VxH-hKq-Ari8WmyoI8z71PyuiP4g/exec";
+  <div class="cuerpo">
+    <div id="video-container">
+      <video id="video" autoplay playsinline muted></video>
+      <div id="overlay"></div>
+    </div>
+    <canvas id="canvas"></canvas>
+    <div id="resultado">📷 Iniciando cámara...</div>
+  </div>
+  <div class="pie">
+    <strong>Administración de Seguridad</strong><br>Universidad Continental Cusco
+  </div>
+</div>
 
-    let isScanning = false;
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbxQdbyQGrbkmtOKeQf-auTr3Ga_EtBmbm3Iq1k7w4VxH-hKq-Ari8WmyoI8z71PyuiP4g/exec";
 
-    function mostrarResultado(mensaje, clase) {
-      const div = document.getElementById('resultado');
-      div.innerHTML = mensaje;
-      div.className = clase;
-    }
+  const video    = document.getElementById("video");
+  const canvas   = document.getElementById("canvas");
+  const ctx      = canvas.getContext("2d");
+  const resultado = document.getElementById("resultado");
 
-    function onScanSuccess(decodedText) {
-      if (isScanning) return;
-      isScanning = true;
-      mostrarResultado("⏳ Verificando credencial...", "cargando");
-      fetch(API_URL + "?dni=" + encodeURIComponent(decodedText))
-        .then(res => res.json())
-        .then(data => {
-          const msg = data.mensaje || "Sin respuesta del servidor.";
-          let clase = "exito";
-          if (msg.includes("❌") || msg.includes("Denegado")) clase = "error";
-          if (msg.includes("⚠️") || msg.includes("Bloqueado")) clase = "aviso";
-          mostrarResultado(msg, clase);
-          setTimeout(() => { isScanning = false; mostrarResultado("📷 Esperando credencial QR...", ""); }, 3500);
-        })
-        .catch(() => {
-          mostrarResultado("❌ Error de conexión. Verifica el internet.", "error");
-          setTimeout(() => { isScanning = false; }, 3000);
-        });
-    }
+  let isScanning  = false;
+  let scanLoop    = null;
 
-    const config = {
-      fps: 10,
-      qrbox: { width: 260, height: 260 },
-      videoConstraints: { facingMode: { ideal: "environment" } }
-    };
+  function mostrar(msg, clase) {
+    resultado.innerHTML = msg;
+    resultado.className = clase;
+  }
 
-    const scanner = new Html5QrcodeScanner("reader", config, false);
-    scanner.render(onScanSuccess, () => {});
-    mostrarResultado("📷 Esperando credencial QR...", "");
-  </script>
+  // Iniciar cámara trasera directamente, sin preguntar cuál
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
+  })
+  .catch(() => {
+    // Si "exact" falla (ej. laptop sin cámara trasera), usar la que haya disponible
+    return navigator.mediaDevices.getUserMedia({ video: true });
+  })
+  .then(stream => {
+    video.srcObject = stream;
+    video.play();
+    mostrar("📷 Esperando credencial QR...", "");
+    iniciarScan();
+  })
+  .catch(err => {
+    mostrar("❌ No se pudo acceder a la cámara. Verifica los permisos del navegador.", "error");
+  });
+
+  function iniciarScan() {
+    scanLoop = setInterval(() => {
+      if (isScanning || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "dontInvert"
+      });
+
+      if (code) {
+        procesarQR(code.data);
+      }
+    }, 200); // revisar cada 200ms
+  }
+
+  function procesarQR(dni) {
+    isScanning = true;
+    mostrar("⏳ Verificando credencial...", "cargando");
+
+    fetch(API_URL + "?dni=" + encodeURIComponent(dni))
+      .then(r => r.json())
+      .then(data => {
+        const msg = data.mensaje || "Sin respuesta.";
+        let clase = "exito";
+        if (msg.includes("❌") || msg.includes("Denegado")) clase = "error";
+        if (msg.includes("⚠️") || msg.includes("Bloqueado")) clase = "aviso";
+        mostrar(msg, clase);
+        setTimeout(() => {
+          isScanning = false;
+          mostrar("📷 Esperando credencial QR...", "");
+        }, 3500);
+      })
+      .catch(() => {
+        mostrar("❌ Error de conexión. Verifica el internet.", "error");
+        setTimeout(() => { isScanning = false; }, 3000);
+      });
+  }
+</script>
 </body>
 </html>
