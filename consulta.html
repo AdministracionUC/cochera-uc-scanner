@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consulta de Registros - Estacionamiento UC Cusco</title>
+  <title>Consulta de Registros - Cochera UC Cusco</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,7 +57,7 @@
 <div class="contenedor">
 
   <div class="cabecera">
-    <h1>📋 Registro de Ingresos — Estacionamiento UC</h1>
+    <h1>📋 Registro de Ingresos — Cochera UC</h1>
     <p>Universidad Continental — Sede Cusco</p>
   </div>
 
@@ -86,7 +86,7 @@
     <table id="tabla" style="display:none;">
       <thead>
         <tr>
-          <th>#</th><th>Estado</th><th>Nombres</th>
+          <th>#</th><th>Estado</th><th>Nombres</th><th>DNI</th>
           <th>Celular</th><th>Placa</th><th>Color</th>
           <th>Ingreso 1</th><th>Salida 1</th><th>Ingreso 2</th><th>Salida 2</th>
         </tr>
@@ -173,6 +173,7 @@
         <td>${idx + 1}</td>
         <td><span class="badge ${r.adentro ? 'adentro' : 'afuera'}">${r.adentro ? '🟢 Adentro' : '⬜ Afuera'}</span></td>
         <td><strong>${r.nombres}</strong></td>
+        <td>${r.dni}</td>
         <td>${r.celular || "—"}</td>
         <td>${r.placa || "—"}</td>
         <td>${r.color || "—"}</td>
