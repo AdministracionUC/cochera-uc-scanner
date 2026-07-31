@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Estacionamiento UC - Sede Cusco</title>
+  <title>Control de Cochera UC - Sede Cusco</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; text-align: center; background-color: #F4F4F4; padding: 15px; min-height: 100vh; }
@@ -18,7 +18,12 @@
     #overlay::before, #overlay::after { content: ''; position: absolute; width: 30px; height: 30px; border-color: white; border-style: solid; }
     #overlay::before { top: -3px; left: -3px; border-width: 4px 0 0 4px; border-radius: 8px 0 0 0; }
     #overlay::after  { bottom: -3px; right: -3px; border-width: 0 4px 4px 0; border-radius: 0 0 8px 0; }
-    #resultado { margin-top: 16px; padding: 14px 18px; font-weight: bold; font-size: 1em; border-radius: 8px; background: #F4F4F4; color: #444; min-height: 50px; display: flex; align-items: center; justify-content: center; }
+    #resultado { margin-top: 16px; padding: 14px 18px; border-radius: 8px; background: #F4F4F4; color: #444; min-height: 70px; text-align: center; line-height: 1.5; }
+    #resultado .tipo   { font-size: 1em; font-weight: bold; margin-bottom: 4px; }
+    #resultado .nombre { font-size: 1.2em; font-weight: bold; margin-bottom: 2px; }
+    #resultado .vinculo{ font-size: 0.85em; opacity: 0.85; margin-bottom: 4px; }
+    #resultado .hora   { font-size: 0.95em; font-weight: bold; }
+    #resultado .simple { font-size: 1em; font-weight: bold; display: flex; align-items: center; justify-content: center; min-height: 42px; }
     .exito    { color: #155724; background: #D4EDDA !important; border: 1px solid #C3E6CB; }
     .error    { color: #721C24; background: #F8D7DA !important; border: 1px solid #F5C6CB; }
     .cargando { color: #004085; background: #CCE5FF !important; border: 1px solid #B8DAFF; }
@@ -31,7 +36,7 @@
 <body>
 <div class="contenedor">
   <div class="cabecera">
-    <h2>🎫 Control de Estacionamiento UC</h2>
+    <h2>🎫 Control de Cochera UC</h2>
     <p>Universidad Continental — Sede Cusco</p>
   </div>
   <div class="cuerpo">
@@ -43,7 +48,7 @@
     <div id="resultado">📷 Iniciando cámara...</div>
   </div>
   <div class="pie">
-    <strong>Administración y Seguridad</strong><br>Universidad Continental Cusco
+    <strong>Administración de Seguridad</strong><br>Universidad Continental Cusco
   </div>
 </div>
 
@@ -60,7 +65,7 @@
   let scanLoop    = null;
 
   function mostrar(msg, clase) {
-    resultado.innerHTML = msg;
+    resultado.innerHTML = `<div class="simple">${msg}</div>`;
     resultado.className = clase;
   }
 
@@ -108,15 +113,38 @@
     fetch(API_URL + "?dni=" + encodeURIComponent(dni))
       .then(r => r.json())
       .then(data => {
-        const msg = data.mensaje || "Sin respuesta.";
         let clase = "exito";
-        if (msg.includes("❌") || msg.includes("Denegado")) clase = "error";
-        if (msg.includes("⚠️") || msg.includes("Bloqueado")) clase = "aviso";
-        mostrar(msg, clase);
+        let html  = "";
+
+        if (data.tipo === "denegado") {
+          clase = "error";
+          html  = `<div class="simple">❌ Acceso Denegado: QR inválido o no registrado.</div>`;
+        } else if (data.tipo === "bloqueado") {
+          clase = "aviso";
+          html  = `<div class="simple">⚠️ Bloqueado: Excedió el límite de ingresos y salidas hoy.</div>`;
+        } else if (data.nombres) {
+          const esSalida = data.tipo && data.tipo.toLowerCase().includes("salida");
+          clase = esSalida ? "aviso" : "exito";
+          html = `
+            <div class="tipo">${data.emoji || ""} ${data.tipo || ""}</div>
+            <div class="nombre">${data.nombres}</div>
+            <div class="vinculo">${data.vinculo}</div>
+            <div class="hora">${data.hora}</div>`;
+        } else {
+          // fallback por si el backend devuelve solo mensaje
+          const msg = data.mensaje || "Sin respuesta.";
+          if (msg.includes("❌")) clase = "error";
+          if (msg.includes("⚠️")) clase = "aviso";
+          html = `<div class="simple">${msg}</div>`;
+        }
+
+        resultado.innerHTML = html;
+        resultado.className = clase;
+
         setTimeout(() => {
           isScanning = false;
           mostrar("📷 Esperando credencial QR...", "");
-        }, 3500);
+        }, 4000);
       })
       .catch(() => {
         mostrar("❌ Error de conexión. Verifica el internet.", "error");
