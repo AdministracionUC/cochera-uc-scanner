@@ -192,7 +192,7 @@
     if (!grafico) return;
 
     // Solo mostrar horas que tengan actividad (5 AM - 10 PM como rango útil)
-    const horasUtiles = Array.from({length: 18}, (_, i) => i + 5); // 5 a 22
+    const horasUtiles = Array.from({length: 18}, (_, i) => i + 6); // 6 a 23
     const labels   = horasUtiles.map(h => h + ":00");
     const ingresos = horasUtiles.map(h => grafico.ingresosPorHora[h] || 0);
     const salidas  = horasUtiles.map(h => grafico.salidasPorHora[h]  || 0);
