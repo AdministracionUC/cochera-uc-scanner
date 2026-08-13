@@ -12,19 +12,42 @@
     .cabecera h2 { margin: 0; font-size: 1.3em; letter-spacing: 0.5px; }
     .cabecera p { margin: 5px 0 0 0; font-size: 0.88em; opacity: 0.88; }
     .cuerpo { padding: 20px; }
-    #video-container { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #000; }
+
+    #video-container {
+      position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #000;
+      max-height: 500px; opacity: 1;
+      transition: opacity 0.25s ease, max-height 0.35s ease, margin-bottom 0.35s ease;
+      margin-bottom: 0;
+    }
+    #video-container.oculto {
+      opacity: 0; max-height: 0; pointer-events: none;
+    }
     #video { width: 100%; display: block; }
     #overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 220px; border: 3px solid #007A3D; border-radius: 12px; box-shadow: 0 0 0 2000px rgba(0,0,0,0.45); pointer-events: none; }
     #overlay::before, #overlay::after { content: ''; position: absolute; width: 30px; height: 30px; border-color: white; border-style: solid; }
     #overlay::before { top: -3px; left: -3px; border-width: 4px 0 0 4px; border-radius: 8px 0 0 0; }
     #overlay::after  { bottom: -3px; right: -3px; border-width: 0 4px 4px 0; border-radius: 0 0 8px 0; }
-    #resultado { margin-top: 16px; padding: 14px 18px; border-radius: 8px; background: #F4F4F4; color: #444; min-height: 70px; text-align: center; line-height: 1.5; }
-    #resultado .tipo   { font-size: 1em; font-weight: bold; margin-bottom: 4px; }
-    #resultado .nombre { font-size: 1.2em; font-weight: bold; margin-bottom: 2px; }
-    #resultado .placa  { font-size: 1.05em; font-weight: bold; letter-spacing: 1.5px; margin: 4px 0; display: inline-block; padding: 3px 12px; border: 2px solid #1A1A1A; border-radius: 4px; background: #fff; color: #1A1A1A; }
-    #resultado .vinculo{ font-size: 0.85em; opacity: 0.85; margin: 4px 0; }
-    #resultado .hora   { font-size: 0.95em; font-weight: bold; margin-top: 4px; }
+
+    #resultado {
+      margin-top: 16px; padding: 14px 18px; border-radius: 8px; background: #F4F4F4; color: #444;
+      min-height: 70px; text-align: center; line-height: 1.5;
+      transition: padding 0.35s ease, min-height 0.35s ease;
+    }
+    #resultado .tipo   { font-size: 1em; font-weight: bold; margin-bottom: 4px; transition: font-size 0.35s ease; }
+    #resultado .nombre { font-size: 1.2em; font-weight: bold; margin-bottom: 2px; transition: font-size 0.35s ease; }
+    #resultado .placa  { font-size: 1.05em; font-weight: bold; letter-spacing: 1.5px; margin: 4px 0; display: inline-block; padding: 3px 12px; border: 2px solid #1A1A1A; border-radius: 4px; background: #fff; color: #1A1A1A; transition: font-size 0.35s ease, padding 0.35s ease; }
+    #resultado .vinculo{ font-size: 0.85em; opacity: 0.85; margin: 4px 0; transition: font-size 0.35s ease; }
+    #resultado .hora   { font-size: 0.95em; font-weight: bold; margin-top: 4px; transition: font-size 0.35s ease; }
     #resultado .simple { font-size: 1em; font-weight: bold; display: flex; align-items: center; justify-content: center; min-height: 42px; }
+
+    /* Estado "grande": cuando la cámara está oculta y solo se ven los datos */
+    #resultado.grande { padding: 40px 18px; min-height: 220px; }
+    #resultado.grande .tipo   { font-size: 1.15em; }
+    #resultado.grande .nombre { font-size: 1.6em; }
+    #resultado.grande .placa  { font-size: 1.35em; padding: 5px 18px; }
+    #resultado.grande .vinculo{ font-size: 1.05em; }
+    #resultado.grande .hora   { font-size: 1.2em; }
+
     .exito    { color: #155724; background: #D4EDDA !important; border: 1px solid #C3E6CB; }
     .error    { color: #721C24; background: #F8D7DA !important; border: 1px solid #F5C6CB; }
     .cargando { color: #004085; background: #CCE5FF !important; border: 1px solid #B8DAFF; }
@@ -57,10 +80,11 @@
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbxQdbyQGrbkmtOKeQf-auTr3Ga_EtBmbm3Iq1k7w4VxH-hKq-Ari8WmyoI8z71PyuiP4g/exec";
 
-  const video    = document.getElementById("video");
-  const canvas   = document.getElementById("canvas");
-  const ctx      = canvas.getContext("2d");
-  const resultado = document.getElementById("resultado");
+  const video          = document.getElementById("video");
+  const canvas         = document.getElementById("canvas");
+  const ctx             = canvas.getContext("2d");
+  const resultado       = document.getElementById("resultado");
+  const videoContainer  = document.getElementById("video-container");
 
   let isScanning  = false;
   let scanLoop    = null;
@@ -68,6 +92,18 @@
   function mostrar(msg, clase) {
     resultado.innerHTML = `<div class="simple">${msg}</div>`;
     resultado.className = clase;
+  }
+
+  // Oculta la cámara y agranda el panel de resultado
+  function ocultarCamara() {
+    videoContainer.classList.add("oculto");
+    resultado.classList.add("grande");
+  }
+
+  // Vuelve a mostrar la cámara y regresa el panel a su tamaño normal
+  function mostrarCamara() {
+    videoContainer.classList.remove("oculto");
+    resultado.classList.remove("grande");
   }
 
   // Iniciar cámara trasera directamente, sin preguntar cuál
@@ -109,6 +145,7 @@
 
   function procesarQR(dni) {
     isScanning = true;
+    ocultarCamara();
     mostrar("⏳ Verificando credencial...", "cargando");
 
     fetch(API_URL + "?dni=" + encodeURIComponent(dni))
@@ -141,16 +178,22 @@
         }
 
         resultado.innerHTML = html;
-        resultado.className = clase;
+        resultado.className = "grande " + clase;
 
         setTimeout(() => {
           isScanning = false;
+          mostrarCamara();
           mostrar("📷 Esperando credencial QR...", "");
         }, 4000);
       })
       .catch(() => {
+        resultado.className = "grande error";
         mostrar("❌ Error de conexión. Verifica el internet.", "error");
-        setTimeout(() => { isScanning = false; }, 3000);
+        setTimeout(() => {
+          isScanning = false;
+          mostrarCamara();
+          mostrar("📷 Esperando credencial QR...", "");
+        }, 3000);
       });
   }
 </script>
