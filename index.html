@@ -22,7 +22,8 @@
     #resultado .tipo   { font-size: 1em; font-weight: bold; margin-bottom: 4px; }
     #resultado .nombre { font-size: 1.2em; font-weight: bold; margin-bottom: 2px; }
     #resultado .vinculo{ font-size: 0.85em; opacity: 0.85; margin-bottom: 4px; }
-    #resultado .hora   { font-size: 0.95em; font-weight: bold; }
+    #resultado .placa  { font-size: 1.05em; font-weight: bold; letter-spacing: 1.5px; margin: 6px 0; display: inline-block; padding: 3px 12px; border: 2px solid #1A1A1A; border-radius: 4px; background: #fff; color: #1A1A1A; }
+    #resultado .hora   { font-size: 0.95em; font-weight: bold; margin-top: 4px; }
     #resultado .simple { font-size: 1em; font-weight: bold; display: flex; align-items: center; justify-content: center; min-height: 42px; }
     .exito    { color: #155724; background: #D4EDDA !important; border: 1px solid #C3E6CB; }
     .error    { color: #721C24; background: #F8D7DA !important; border: 1px solid #F5C6CB; }
@@ -129,6 +130,7 @@
             <div class="tipo">${data.emoji || ""} ${data.tipo || ""}</div>
             <div class="nombre">${data.nombres}</div>
             <div class="vinculo">${data.vinculo}</div>
+            ${data.placa ? `<div class="placa">🚗 ${data.placa}</div>` : ""}
             <div class="hora">${data.hora}</div>`;
         } else {
           // fallback por si el backend devuelve solo mensaje
