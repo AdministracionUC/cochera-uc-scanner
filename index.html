@@ -35,7 +35,8 @@
     }
     #resultado .tipo   { font-size: 1em; font-weight: bold; margin-bottom: 4px; transition: font-size 0.35s ease; }
     #resultado .nombre { font-size: 1.2em; font-weight: bold; margin-bottom: 2px; transition: font-size 0.35s ease; }
-    #resultado .placa  { font-size: 1.05em; font-weight: bold; letter-spacing: 1.5px; margin: 4px 0; display: inline-block; padding: 3px 12px; border: 2px solid #1A1A1A; border-radius: 4px; background: #fff; color: #1A1A1A; transition: font-size 0.35s ease, padding 0.35s ease; }
+    #resultado .placa  { font-size: 1.05em; font-weight: bold; letter-spacing: 1.5px; margin: 4px 0 2px 0; display: inline-block; padding: 3px 12px; border: 2px solid #1A1A1A; border-radius: 4px; background: #fff; color: #1A1A1A; transition: font-size 0.35s ease, padding 0.35s ease; }
+    #resultado .color  { font-size: 0.85em; font-weight: bold; margin: 0 0 4px 0; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.5px; transition: font-size 0.35s ease; }
     #resultado .vinculo{ font-size: 0.85em; opacity: 0.85; margin: 4px 0; transition: font-size 0.35s ease; }
     #resultado .hora   { font-size: 0.95em; font-weight: bold; margin-top: 4px; transition: font-size 0.35s ease; }
     #resultado .simple { font-size: 1em; font-weight: bold; display: flex; align-items: center; justify-content: center; min-height: 42px; }
@@ -45,6 +46,7 @@
     #resultado.grande .tipo   { font-size: 1.15em; }
     #resultado.grande .nombre { font-size: 1.6em; }
     #resultado.grande .placa  { font-size: 1.35em; padding: 5px 18px; }
+    #resultado.grande .color  { font-size: 1em; }
     #resultado.grande .vinculo{ font-size: 1.05em; }
     #resultado.grande .hora   { font-size: 1.2em; }
 
@@ -167,6 +169,7 @@
             <div class="tipo">${data.emoji || ""} ${data.tipo || ""}</div>
             <div class="nombre">${data.nombres}</div>
             ${data.placa ? `<div class="placa">🚗 ${data.placa}</div>` : ""}
+            ${data.color ? `<div class="color">${data.color}</div>` : ""}
             <div class="vinculo">${data.vinculo}</div>
             <div class="hora">${data.hora}</div>`;
         } else {
