@@ -108,53 +108,23 @@
     resultado.classList.remove("grande");
   }
 
-  // ---- INICIO CÁMARA (CORREGIDO) ----
-  // Pide la trasera con "ideal" (nunca truena) y, si el navegador no la
-  // respeta, la busca manualmente por nombre entre las cámaras disponibles.
-  async function iniciarCamara() {
-    try {
-      let stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
-
-      const track = stream.getVideoTracks()[0];
-      const settings = track.getSettings ? track.getSettings() : {};
-
-      if (settings.facingMode && settings.facingMode !== "environment") {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const camaras = devices.filter(d => d.kind === "videoinput");
-        const trasera = camaras.find(d =>
-          /back|rear|trasera|environment/i.test(d.label)
-        );
-
-        if (trasera) {
-          track.stop();
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              deviceId: { exact: trasera.deviceId },
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
-          });
-        }
-      }
-
-      video.srcObject = stream;
-      video.play();
-      mostrar("📷 Esperando credencial QR...", "");
-      iniciarScan();
-
-    } catch (err) {
-      mostrar("❌ No se pudo acceder a la cámara. Verifica los permisos del navegador.", "error");
-    }
-  }
-
-  iniciarCamara();
-  // ---- FIN INICIO CÁMARA ----
+  // Iniciar cámara trasera directamente, sin preguntar cuál
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } }
+  })
+  .catch(() => {
+    // Si "exact" falla (ej. laptop sin cámara trasera), usar la que haya disponible
+    return navigator.mediaDevices.getUserMedia({ video: true });
+  })
+  .then(stream => {
+    video.srcObject = stream;
+    video.play();
+    mostrar("📷 Esperando credencial QR...", "");
+    iniciarScan();
+  })
+  .catch(err => {
+    mostrar("❌ No se pudo acceder a la cámara. Verifica los permisos del navegador.", "error");
+  });
 
   function iniciarScan() {
     scanLoop = setInterval(() => {
