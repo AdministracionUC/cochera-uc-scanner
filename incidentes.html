@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro de Incidentes - Estacionamiento UC Cusco</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #F4F4F4; padding: 15px; }
+    .contenedor { max-width: 680px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+
+    .cabecera { background: #007A3D; color: white; padding: 22px 20px; border-bottom: 5px solid #1A1A1A; text-align: center; }
+    .cabecera h1 { font-size: 1.3em; letter-spacing: 0.5px; }
+    .cabecera p  { font-size: 0.88em; opacity: 0.88; margin-top: 5px; }
+
+    .cuerpo { padding: 22px 22px 26px; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .campo { display: flex; flex-direction: column; gap: 5px; }
+    .campo.ancho { grid-column: 1 / -1; }
+    label, .etiqueta-grupo { font-weight: bold; font-size: 13px; color: #333; }
+    input, textarea {
+      padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px;
+      font-size: 14px; font-family: Arial, sans-serif; width: 100%;
+    }
+    input:focus, textarea:focus { outline: 2px solid #007A3D; outline-offset: 1px; border-color: #007A3D; }
+    textarea { min-height: 110px; resize: vertical; }
+    .mayus { text-transform: uppercase; }
+
+    /* Selector de tipo de incidente */
+    .tipos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .tipo input { position: absolute; opacity: 0; pointer-events: none; }
+    .tipo span {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+      padding: 14px 8px; border: 2px solid #ddd; border-radius: 8px; background: #f9f9f9;
+      font-size: 13px; font-weight: bold; color: #333; text-align: center; cursor: pointer; min-height: 78px;
+    }
+    .tipo span .icono { font-size: 1.5em; }
+    .tipo input:checked + span { border-color: #007A3D; background: #D4EDDA; color: #155724; }
+    .tipo input:focus-visible + span { outline: 2px solid #1A1A1A; outline-offset: 2px; }
+
+    .btn {
+      width: 100%; margin-top: 20px; padding: 13px; background: #007A3D; color: white; border: none;
+      border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer;
+    }
+    .btn:hover { background: #005f2f; }
+    .btn:disabled { background: #999; cursor: not-allowed; }
+
+    #mensaje { margin-top: 16px; padding: 12px 16px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 14px; display: none; }
+    .exito    { color: #155724; background: #D4EDDA; border: 1px solid #C3E6CB; }
+    .error    { color: #721C24; background: #F8D7DA; border: 1px solid #F5C6CB; }
+    .cargando { color: #004085; background: #CCE5FF; border: 1px solid #B8DAFF; }
+
+    .pie { background: #1A1A1A; color: #aaa; text-align: center; padding: 12px; font-size: 11px; }
+    .pie strong { color: white; }
+
+    @media (max-width: 520px) {
+      .grid { grid-template-columns: 1fr; }
+      .tipos { grid-template-columns: 1fr; }
+      .tipo span { flex-direction: row; min-height: 52px; justify-content: flex-start; padding: 10px 14px; gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+<div class="contenedor">
+
+  <div class="cabecera">
+    <h1>🚨 Registro de Incidentes — Estacionamiento UC</h1>
+    <p>Universidad Continental — Sede Cusco</p>
+  </div>
+
+  <div class="cuerpo">
+    <form id="form" autocomplete="off">
+
+      <div class="campo ancho" style="margin-bottom:16px;">
+        <span class="etiqueta-grupo">Tipo de incidente</span>
+        <div class="tipos" role="radiogroup" aria-label="Tipo de incidente">
+          <label class="tipo">
+            <input type="radio" name="incidente" value="Incidente Vehicular" required>
+            <span><span class="icono">🚗</span>Incidente Vehicular</span>
+          </label>
+          <label class="tipo">
+            <input type="radio" name="incidente" value="Incidente por Clima">
+            <span><span class="icono">🌧️</span>Incidente por Clima</span>
+          </label>
+          <label class="tipo">
+            <input type="radio" name="incidente" value="Suplantación de Vehículo">
+            <span><span class="icono">🎭</span>Suplantación de Vehículo</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="campo">
+          <label for="fecha">Día</label>
+          <input type="date" id="fecha" required>
+        </div>
+        <div class="campo">
+          <label for="dni">DNI</label>
+          <input type="text" id="dni" inputmode="numeric" maxlength="12" required>
+        </div>
+
+        <div class="campo">
+          <label for="nombre">Nombre</label>
+          <input type="text" id="nombre" class="mayus" required>
+        </div>
+        <div class="campo">
+          <label for="apellido">Apellido</label>
+          <input type="text" id="apellido" class="mayus" required>
+        </div>
+
+        <div class="campo">
+          <label for="vinculo">Vínculo</label>
+          <input type="text" id="vinculo" class="mayus" list="lista-vinculos" required>
+          <datalist id="lista-vinculos">
+            <option value="ESTUDIANTE">
+            <option value="DOCENTE">
+            <option value="ADMINISTRATIVO">
+            <option value="VISITANTE">
+          </datalist>
+        </div>
+        <div class="campo">
+          <label for="marca">Marca</label>
+          <input type="text" id="marca" class="mayus" required>
+        </div>
+
+        <div class="campo">
+          <label for="placa">Placa</label>
+          <input type="text" id="placa" class="mayus" maxlength="10" required>
+        </div>
+        <div class="campo">
+          <label for="color">Color</label>
+          <input type="text" id="color" class="mayus" required>
+        </div>
+
+        <div class="campo ancho">
+          <label for="descripcion">Descripción</label>
+          <textarea id="descripcion" maxlength="1500" placeholder="Describe lo ocurrido: hora aproximada, lugar dentro del estacionamiento, daños, personas involucradas..." required></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn" id="btn">Registrar incidente</button>
+      <div id="mensaje"></div>
+    </form>
+  </div>
+
+  <div class="pie"><strong>Coordinación Administrativa</strong><br>Universidad Continental Cusco</div>
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbxQdbyQGrbkmtOKeQf-auTr3Ga_EtBmbm3Iq1k7w4VxH-hKq-Ari8WmyoI8z71PyuiP4g/exec";
+
+  const form    = document.getElementById("form");
+  const btn     = document.getElementById("btn");
+  const mensaje = document.getElementById("mensaje");
+
+  function hoyLocal() {
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  function mostrar(texto, clase) {
+    mensaje.textContent = texto;
+    mensaje.className = clase;
+    mensaje.style.display = "block";
+  }
+
+  document.getElementById("fecha").value = hoyLocal();
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+
+    const tipo = form.querySelector('input[name="incidente"]:checked');
+    if (!tipo) { mostrar("⚠️ Selecciona el tipo de incidente.", "error"); return; }
+
+    const payload = {
+      accion:      "incidente",
+      fecha:       document.getElementById("fecha").value,
+      nombre:      document.getElementById("nombre").value,
+      apellido:    document.getElementById("apellido").value,
+      dni:         document.getElementById("dni").value,
+      vinculo:     document.getElementById("vinculo").value,
+      marca:       document.getElementById("marca").value,
+      placa:       document.getElementById("placa").value,
+      color:       document.getElementById("color").value,
+      incidente:   tipo.value,
+      descripcion: document.getElementById("descripcion").value
+    };
+
+    btn.disabled = true;
+    mostrar("⏳ Registrando incidente...", "cargando");
+
+    // Sin cabeceras: se envía como text/plain y evita problemas de CORS con Apps Script
+    fetch(API_URL, { method: "POST", body: JSON.stringify(payload) })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) throw new Error(data.mensaje || "No se pudo registrar.");
+        mostrar(data.mensaje || "✅ Incidente registrado.", "exito");
+        form.reset();
+        document.getElementById("fecha").value = hoyLocal();
+      })
+      .catch(err => {
+        mostrar("❌ " + (err.message || "Error de conexión. Verifica el internet."), "error");
+      })
+      .finally(() => { btn.disabled = false; });
+  });
+</script>
+</body>
+</html>
