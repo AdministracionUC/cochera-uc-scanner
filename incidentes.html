@@ -26,6 +26,10 @@
     input:focus, textarea:focus { outline: 2px solid #007A3D; outline-offset: 1px; border-color: #007A3D; }
     textarea { min-height: 110px; resize: vertical; }
     .mayus { text-transform: uppercase; }
+    .dni-estado { font-size: 12px; min-height: 16px; color: #666; }
+    .dni-estado.ok   { color: #155724; font-weight: bold; }
+    .dni-estado.info { color: #856404; font-weight: bold; }
+    input.autocompletado { background: #F1F8F3; border-color: #007A3D; }
 
     /* Selector de tipo de incidente */
     .tipos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -98,6 +102,7 @@
         <div class="campo">
           <label for="dni">DNI</label>
           <input type="text" id="dni" inputmode="numeric" maxlength="12" required>
+          <span id="dni-estado" class="dni-estado"></span>
         </div>
 
         <div class="campo">
@@ -167,6 +172,81 @@
 
   document.getElementById("fecha").value = hoyLocal();
 
+  // ---------- Autocompletar por DNI ----------
+  const dniInput  = document.getElementById("dni");
+  const dniEstado = document.getElementById("dni-estado");
+  const camposAuto = ["vinculo", "marca", "placa", "color"];
+  let temporizador = null;
+  let ultimaBusqueda = 0;
+
+  function estadoDNI(texto, clase) {
+    dniEstado.textContent = texto;
+    dniEstado.className = "dni-estado " + (clase || "");
+  }
+
+  // Si el usuario edita un campo a mano, deja de considerarse "autocompletado"
+  camposAuto.forEach(id => {
+    document.getElementById(id).addEventListener("input", e => {
+      e.target.classList.remove("autocompletado");
+    });
+  });
+
+  function limpiarAutocompletados() {
+    camposAuto.forEach(id => {
+      const el = document.getElementById(id);
+      if (el.classList.contains("autocompletado")) {
+        el.value = "";
+        el.classList.remove("autocompletado");
+      }
+    });
+  }
+
+  function buscarDNI() {
+    const dni = dniInput.value.trim();
+    if (dni.length < 8) { estadoDNI(""); return; }
+
+    const turno = ++ultimaBusqueda;
+    estadoDNI("🔎 Buscando en el registro...");
+
+    fetch(API_URL, { method: "POST", body: JSON.stringify({ accion: "buscarDNI", dni: dni }) })
+      .then(r => r.json())
+      .then(data => {
+        if (turno !== ultimaBusqueda) return; // llegó una respuesta vieja
+        if (!data.ok) throw new Error(data.mensaje);
+
+        if (data.encontrado) {
+          camposAuto.forEach(id => {
+            const el = document.getElementById(id);
+            el.value = data[id] || "";
+            el.classList.add("autocompletado");
+          });
+          estadoDNI("✅ Encontrado en el registro: " + (data.nombres || ""), "ok");
+        } else {
+          limpiarAutocompletados();
+          estadoDNI("ℹ️ DNI no registrado. Completa los datos manualmente.", "info");
+        }
+      })
+      .catch(() => {
+        if (turno !== ultimaBusqueda) return;
+        estadoDNI("⚠️ No se pudo consultar el registro. Completa los datos manualmente.", "info");
+      });
+  }
+
+  dniInput.addEventListener("input", () => {
+    clearTimeout(temporizador);
+    if (dniInput.value.trim().length < 8) {
+      ultimaBusqueda++;
+      limpiarAutocompletados();
+      estadoDNI("");
+      return;
+    }
+    temporizador = setTimeout(buscarDNI, 500);
+  });
+  dniInput.addEventListener("blur", () => {
+    clearTimeout(temporizador);
+    buscarDNI();
+  });
+
   form.addEventListener("submit", e => {
     e.preventDefault();
 
@@ -198,6 +278,8 @@
         mostrar(data.mensaje || "✅ Incidente registrado.", "exito");
         form.reset();
         document.getElementById("fecha").value = hoyLocal();
+        camposAuto.forEach(id => document.getElementById(id).classList.remove("autocompletado"));
+        estadoDNI("");
       })
       .catch(err => {
         mostrar("❌ " + (err.message || "Error de conexión. Verifica el internet."), "error");
